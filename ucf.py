@@ -5,7 +5,6 @@ from unicodedata import normalize
 from xml.etree import cElementTree as ET
 import contextlib
 import posixpath
-import UserDict
 import zipfile
 
 
@@ -23,6 +22,13 @@ The UCF spec is included with the Creative Suite SDK. Also here:
 
 
 __version__ = '0.1'
+
+
+# Python 3 compatibility
+try:
+    unichr, unicode
+except NameError:
+    unichr, unicode = chr, str
 
 
 META_INF = 'META-INF'
@@ -63,22 +69,6 @@ def element_tostring(ele, xml_declaration=True, encoding=UTF8,
     tree.write(out, xml_declaration=xml_declaration, encoding=encoding,
         default_namespace=default_namespace)
     return out.getvalue()
-
-
-# ElementTree 1.2.6 / Python 2.6 compatibility
-# http://effbot.org/zone/element-namespaces.htm
-try:
-    ET.register_namespace
-except AttributeError:
-    def register_namespace(prefix, uri):
-        """Updates the pure-Python ElementTree namespace map (also used by
-        cElementTree).
-        """
-        from xml.etree import ElementTree
-        
-        ElementTree._namespace_map[uri] = prefix
-    
-    ET.register_namespace = register_namespace
 
 
 for prefix in NSMAP:
@@ -134,6 +124,7 @@ class UCF(OrderedDict):
             self.open()
     
     def __setitem__(self, key, val):
+        key = _decode(key)
         _assert_valid_name(key)
         return OrderedDict.__setitem__(self, key, val)
         
@@ -141,7 +132,8 @@ class UCF(OrderedDict):
         # zipfile didn't get context manager support until Python 2.7
         with contextlib.closing(zipfile.ZipFile(self._filename)) as archive:
             for info in archive.infolist():
-                name = info.filename.decode(UTF8)
+                # Python 3 gives us unicode member names already
+                name = _decode(info.filename)
                 self[name] = archive.read(info)
     
         if CONTAINER in self.meta:
@@ -196,6 +188,13 @@ class UCF(OrderedDict):
         return object.__repr__(self)
 
 
+def _decode(string, encoding=UTF8):
+    # Python 2/3 compatibility hack
+    if isinstance(string, bytes):
+        return string.decode(encoding)
+    return string
+
+
 def _build_container(names_and_types):
     """Build an XML document for use as container.xml
     
@@ -206,9 +205,8 @@ def _build_container(names_and_types):
     container.set('{%s}version' % NSMAP['container'], '1.0')
     rootfiles = ET.SubElement(container, '{%s}rootfiles' % NSMAP['container'])
     for name, media_type in names_and_types:
-        # We require Unicode, but let you use strings
-        if not isinstance(name, unicode): name = name.decode(UTF8)
-        if not isinstance(media_type, unicode): media_type = media_type.decode(UTF8)
+        # We require unicode, but let you use bytes
+        name, media_type = _decode(name), _decode(media_type)
         
         rootfile = ET.SubElement(rootfiles, '{%s}rootfile' % NSMAP['container'])
         rootfile.set('{%s}full-path' % NSMAP['container'], name)
@@ -227,8 +225,9 @@ def _read_rootfiles(xml):
     """
     tree = ET.fromstring(xml)
     eles = tree.findall('./{%(od)s}rootfiles/{%(od)s}rootfile' % {'od': NSMAP['container']})
-    return [(ele.get('full-path').decode(UTF8), ele.get('media-type').decode(UTF8))
-            for ele in eles]
+    pairs = [(ele.get('full-path'), ele.get('media-type')) for ele in eles]
+    # Python 2/3 ET returns bytes on 2, unicode on 3
+    return [(_decode(fp), _decode(mt)) for fp, mt in pairs]
 
 
 def _assert_valid_name(name):

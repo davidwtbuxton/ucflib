@@ -4,6 +4,13 @@ import ucf
 from io import StringIO, BytesIO
 
 
+# Python 3 compatibility
+try:
+    unicode
+except NameError:
+    unicode = str
+
+
 class API(unittest.TestCase):
     def test_exports(self):
         ucf.UCF
@@ -27,6 +34,9 @@ class API(unittest.TestCase):
         pkg = ucf.UCF()
         pkg.save(filename=BytesIO())
     
+    def test_open(self):
+        pkg = ucf.UCF(filename='eg1.epub')
+        
     def test_keys(self):
         """UCF() is a mapping. Keys must be Unicode and must be valid names."""
         pkg = ucf.UCF()

@@ -7,7 +7,7 @@ Introduction
 ------------
 
 
-UCFlib is a small Python module for reading and writing files in the UCF format.
+UCFlib is a Python module for reading and writing UCF and EPUB formats.
 
 The UCF format is used by Adobe for some of its products, including InDesign IDML. The EPUB format for digital books is effectively UCF, so UCFlib can be used to read and write EPUB files.
 
