@@ -69,6 +69,17 @@ class API(unittest.TestCase):
             assert isinstance(full_path, basestring)
             assert isinstance(media_type, basestring)
     
+    def test_mimetype(self):
+        """The mimetype property is always ASCII encoded."""
+        
+        pkg = ucf.UCF()
+        assert isinstance(pkg.mimetype, bytes)
+        assert pkg.mimetype.decode('ASCII')
+
+        custom_type = b'application/test'
+        pkg = ucf.UCF(mimetype=custom_type)
+        assert pkg.mimetype == custom_type
+
     
 if __name__ == "__main__":
     unittest.main()

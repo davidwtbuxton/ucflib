@@ -3,11 +3,7 @@ UCFlib
 
 
 
-Introduction
-------------
-
-
-UCFlib is a Python module for reading and writing UCF and EPUB formats.
+UCFlib is a Python module for reading and writing UCF and EPUB formats. It has been tested with Python 2.7 and 3.2.
 
 The UCF format is used by Adobe for some of its products, including InDesign IDML. The EPUB format for digital books is effectively UCF, so UCFlib can be used to read and write EPUB files.
 
@@ -28,11 +24,14 @@ An instance of UCF is an ordered dictionary. Keys are the names of files in the 
 
 ::
 
-    ebook.keys()
+    list(ebook.keys())
 
-The mimetype property is a convenience for accessing the 'mimetype' file in the archive.
+You can create a new empty UCF instance and set its mimetype in one go::
 
-::
+    idml = ucf.UCF(mimetype='application/vnd.adobe.indesign-idml-package')
+    idml.mimetype # Now set to the InDesign mime type
+
+The mimetype property is a convenience for accessing the 'mimetype' file in the archive. The UCF specification states that the value must an ASCII string, so if you assign a unicode string UFClib will encode it for you::
 
     ebook.mimetype
     # Equivalent to

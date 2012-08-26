@@ -21,7 +21,7 @@ The UCF spec is included with the Creative Suite SDK. Also here:
 """
 
 
-__version__ = '0.1'
+__version__ = '0.2'
 
 
 # Python 3 compatibility
@@ -179,13 +179,19 @@ class UCF(OrderedDict):
         return self[MIME_TYPE]
     
     def _set_mimetype(self, val):
-        self[MIME_TYPE] = val.encode(ASCII)
+        self[MIME_TYPE] = _encode(val, encoding=ASCII)
 
     mimetype = property(fget=_get_mimetype, fset=_set_mimetype)
 
     def __repr__(self):
         # So we don't print the whole dictionary keys/values
         return object.__repr__(self)
+
+
+def _encode(string, encoding=UTF8):
+    if isinstance(string, unicode):
+        return string.encode(encoding)
+    return string
 
 
 def _decode(string, encoding=UTF8):
