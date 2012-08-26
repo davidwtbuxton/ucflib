@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 import unittest
 import ucf
-from io import StringIO, BytesIO
+from io import BytesIO
 
 
 # Python 3 compatibility
@@ -31,11 +31,19 @@ class API(unittest.TestCase):
         can be a path name or a file-like object. If filename is omitted then
         the package is written to the filename used to open the package (if any).
         """
+        filename = BytesIO()
+        
         pkg = ucf.UCF()
-        pkg.save(filename=BytesIO())
+        pkg['abcde'] = b'file 1'
+        pkg['abcd\xe9'] = b'file 2' # e+acute
+        pkg.save(filename=filename)
     
-    def test_open(self):
-        pkg = ucf.UCF(filename='eg1.epub')
+        filename.seek(0)
+        
+        pkg2 = ucf.UCF(filename=filename)
+        
+        assert 'abcde' in pkg2
+        assert 'abcd\xe9' in pkg2
         
     def test_keys(self):
         """UCF() is a mapping. Keys must be Unicode and must be valid names."""

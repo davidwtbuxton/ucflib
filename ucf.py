@@ -152,7 +152,7 @@ class UCF(OrderedDict):
             container = _build_container(self.rootfiles)
             self.meta[CONTAINER] = container.encode(UTF8)
             
-        all_names = self.keys()
+        all_names = list(self.keys()) # Py2/3 compat.
         
         # Check all names are unique modulo differences in case
         normalized_names = set(normalize('NFKD', name).lower() for name in all_names)
@@ -164,14 +164,14 @@ class UCF(OrderedDict):
                 
         with contextlib.closing(zipfile.ZipFile(filename, mode='w')) as archive:
             # First must be mimetype and it must be without compression
-            archive.writestr(MIME_TYPE.encode(UTF8), self[MIME_TYPE])
+            archive.writestr(MIME_TYPE, self[MIME_TYPE])
             all_names.remove(MIME_TYPE)
             # Then write the rest of the files (un)compressed
             compress_type = zipfile.ZIP_DEFLATED
             
             for name in all_names:
                 info = zipfile.ZipInfo()
-                info.filename = name.encode(UTF8)
+                info.filename = name
                 info.compress_type = compress_type
                 archive.writestr(info, self[name])
 
