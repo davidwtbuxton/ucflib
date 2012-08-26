@@ -101,7 +101,7 @@ class MetaFilesDict(MutableMapping):
                 yield key[len(self._meta_path):]
     
     def __len__(self):
-        return len(list(self.keys()))
+        return len(list(iter(self)))
         
 
 class UCF(OrderedDict):

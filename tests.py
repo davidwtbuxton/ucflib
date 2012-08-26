@@ -80,6 +80,30 @@ class API(unittest.TestCase):
         pkg = ucf.UCF(mimetype=custom_type)
         assert pkg.mimetype == custom_type
 
-    
+    def test_meta(self):
+        """The meta property is a dictionary."""
+        pkg = ucf.UCF()
+        pkg.meta.keys()
+        
+        # A new key in meta creates a key in the parent UCF object
+        pkg.meta['manifest.xml'] = b''
+        assert len(pkg.meta) == 1
+        
+        # A new key beginning 'META-INF/' creates a key in meta
+        pkg[ucf.MetaFilesDict._meta_path + 'encryption.xml'] = b''
+        assert len(pkg.meta) == 2
+        assert 'encryption.xml' in pkg.meta
+        
+        # In fact the key is the same key and points to the same object
+        obj = BytesIO()
+        obj.write(b'cookies')
+        
+        pkg.meta['flavour'] = obj
+        assert pkg['META-INF/flavour'] == obj
+        
+        pkg['META-INF/flavour'].write(b' and cream')
+        assert pkg.meta['flavour'].getvalue() == b'cookies and cream'
+        
+
 if __name__ == "__main__":
     unittest.main()
