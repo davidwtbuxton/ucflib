@@ -5,6 +5,7 @@ from unicodedata import normalize
 from xml.etree import cElementTree as ET
 import contextlib
 import posixpath
+import sys
 import zipfile
 
 
@@ -30,11 +31,13 @@ try:
 except NameError:
     unichr, unicode = chr, str
 
+# True if running on Python 3.x
+PY3K = sys.version_info.major >= 3
 
 META_INF = 'META-INF'
 MIME_TYPE = 'mimetype'
-UTF8 = 'UTF-8'
-ASCII = 'ASCII'
+UTF8 = 'utf-8'
+ASCII = 'us-ascii'
 CONTAINER = 'container.xml'
 SEP = posixpath.sep
 
@@ -62,8 +65,11 @@ NSMAP = {
 def element_tostring(ele, xml_declaration=True, encoding=UTF8,
                      default_namespace=None):
     out = BytesIO()
-    # Prevents ETree writing unicode to stream when add <?xml> header
-    encoding = encoding.encode(UTF8)
+    # Python 3.2 requires `encoding` be unicode because it encodes it before
+    # writing to the stream. Python 2.7 requires `encoding` be bytes because it
+    # doesn't encode it before writing to the stream. Both version of ET report
+    # 1.3.0, so this very bad hack works for now.
+    encoding = encoding if PY3K else _encode(encoding)
     
     tree = ET.ElementTree(ele)
     tree.write(out, xml_declaration=xml_declaration, encoding=encoding,
@@ -211,12 +217,14 @@ def _build_container(names_and_types):
     container.set('{%s}version' % NSMAP['container'], '1.0')
     rootfiles = ET.SubElement(container, '{%s}rootfiles' % NSMAP['container'])
     for name, media_type in names_and_types:
-        # We require unicode, but let you use bytes
-        name, media_type = _decode(name), _decode(media_type)
-        
+        # We require unicode, but let you use bytes, hence the _decode()
         rootfile = ET.SubElement(rootfiles, '{%s}rootfile' % NSMAP['container'])
-        rootfile.set('{%s}full-path' % NSMAP['container'], name)
-        rootfile.set('{%s}media-type' % NSMAP['container'], media_type)
+        rootfile.set('{%s}full-path' % NSMAP['container'], _decode(name))
+        
+        # media-type is an optional attribute
+        if media_type:
+            media_type = _decode(media_type)
+            rootfile.set('{%s}media-type' % NSMAP['container'], media_type)
     return element_tostring(container, default_namespace=NSMAP['container'])    
     
     
@@ -233,7 +241,8 @@ def _read_rootfiles(xml):
     eles = tree.findall('./{%(od)s}rootfiles/{%(od)s}rootfile' % {'od': NSMAP['container']})
     pairs = [(ele.get('full-path'), ele.get('media-type')) for ele in eles]
     # Python 2/3 ET returns bytes on 2, unicode on 3
-    return [(_decode(fp), _decode(mt)) for fp, mt in pairs]
+    # The media-type attribute is optional per spec. Guard against None.
+    return [(_decode(fp), _decode(mt) if mt else mt) for fp, mt in pairs]
 
 
 def _assert_valid_name(name):

@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 import unittest
 import ucf
 from io import BytesIO
-
+from xml.etree import ElementTree as ET
 
 # Python 3 compatibility
 try:
@@ -104,6 +104,47 @@ class API(unittest.TestCase):
         pkg['META-INF/flavour'].write(b' and cream')
         assert pkg.meta['flavour'].getvalue() == b'cookies and cream'
         
+
+rootfiles_test_data = [
+    # Test A. Vanilla <rootfile> with @full-path and @media-type.
+    (b"""<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OPS/epb.opf" media-type="application/oebps-package+xml"/></rootfiles></container>""",
+        [('OPS/epb.opf', 'application/oebps-package+xml')],
+    ),
+    # Test B. No @media-type on <rootfile>.
+    (b"""<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OPS/epb.opf" /></rootfiles></container>""",
+        [('OPS/epb.opf', None)],
+    ),
+    # Test C. Multiple <rootfile> elements.
+    (b"""<?xml version="1.0" encoding="UTF-8"?>
+        <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles>
+        <rootfile full-path="1.png" media-type="image/png"/>
+        <rootfile full-path="2.png" />
+        </rootfiles></container>""",
+        [('1.png', 'image/png'), ('2.png', None)],
+    ),
+]
+
+
+class ContainerTest(unittest.TestCase):
+    """container.xml and rootfiles conformance."""
+    def test_read_rootfiles(self):
+        for xml, expected in rootfiles_test_data:
+            result = ucf._read_rootfiles(xml)
+            assert result == expected
+    
+    def test_build_container(self):
+        for xml, rootfiles in rootfiles_test_data:
+            result = ucf._build_container(rootfiles)
+            
+            # Instead of comparing the XML, parse both into the list of
+            # rootfiles again. Not *actually* equivalent, but it will do.
+            expected = ucf._read_rootfiles(xml)
+            result = ucf._read_rootfiles(result)
+            
+            assert result == expected
+
 
 if __name__ == "__main__":
     unittest.main()
