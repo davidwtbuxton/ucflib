@@ -3,7 +3,6 @@ from collections import OrderedDict, MutableMapping
 from io import BytesIO
 from unicodedata import normalize
 from xml.etree import cElementTree as ET
-import contextlib
 import posixpath
 import sys
 import zipfile
@@ -30,9 +29,6 @@ try:
     unichr, unicode
 except NameError:
     unichr, unicode = chr, str
-
-# True if running on Python 3.x
-PY3K = sys.version_info.major >= 3
 
 META_INF = 'META-INF'
 MIME_TYPE = 'mimetype'
@@ -65,14 +61,9 @@ NSMAP = {
 def element_tostring(ele, xml_declaration=True, encoding=UTF8,
                      default_namespace=None):
     out = BytesIO()
-    # Python 3.2 requires `encoding` be unicode because it encodes it before
-    # writing to the stream. Python 2.7 requires `encoding` be bytes because it
-    # doesn't encode it before writing to the stream. Both version of ET report
-    # 1.3.0, so this very bad hack works for now.
-    encoding = encoding if PY3K else _encode(encoding)
-    
+    # Use str(encoding) as suggested by http://bugs.python.org/issue15811#msg169395.
     tree = ET.ElementTree(ele)
-    tree.write(out, xml_declaration=xml_declaration, encoding=encoding,
+    tree.write(out, xml_declaration=xml_declaration, encoding=str(encoding),
         default_namespace=default_namespace)
     return out.getvalue()
 
@@ -135,8 +126,7 @@ class UCF(OrderedDict):
         return OrderedDict.__setitem__(self, key, val)
         
     def open(self):
-        # zipfile didn't get context manager support until Python 2.7
-        with contextlib.closing(zipfile.ZipFile(self._filename)) as archive:
+        with zipfile.ZipFile(self._filename) as archive:
             for info in archive.infolist():
                 # Python 3 gives us unicode member names already
                 name = _decode(info.filename)
@@ -168,7 +158,7 @@ class UCF(OrderedDict):
         for name in all_names:
             _assert_valid_name(name)
                 
-        with contextlib.closing(zipfile.ZipFile(filename, mode='w')) as archive:
+        with zipfile.ZipFile(filename, mode='w') as archive:
             # First must be mimetype and it must be without compression
             archive.writestr(MIME_TYPE, self[MIME_TYPE])
             all_names.remove(MIME_TYPE)

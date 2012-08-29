@@ -44,6 +44,24 @@ class API(unittest.TestCase):
         
         assert 'abcde' in pkg2
         assert 'abcd\xe9' in pkg2
+    
+    def test_zip_bytes_location(self):
+        """The Adobe UCF spec says the bytes 'PK' will be at position 0 in the
+        archive. The bytes 'mimetype' will be at position 30. The actual
+        mimetype will start at position 38 (and will be as-is since the mimetype
+        MUST NOT be compressed and MUST be ascii encoded).
+        """
+        filename = BytesIO()
+        mimetype = b'application/vnd.adobe.indesign-idml-package'
+        
+        pkg = ucf.UCF(mimetype=mimetype)
+        pkg.save(filename=filename)
+        
+        zip_bytes = filename.getvalue()
+        
+        assert zip_bytes[:2] == b'PK'
+        assert zip_bytes[30:38] == b'mimetype'
+        assert zip_bytes[38:(38 + len(mimetype))] == mimetype
         
     def test_keys(self):
         """UCF() is a mapping. Keys must be Unicode and must be valid names."""
