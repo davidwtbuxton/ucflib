@@ -21,11 +21,12 @@ The UCF spec is included with the Creative Suite SDK. Also here:
 """
 
 
-__version__ = '0.2'
+__version__ = '0.2.1'
 __all__ = [
     'UCF',
     'BadFileFormat',
     'Rootfile',
+    'element_tostring',
 ]
 
 # Python 3 compatibility

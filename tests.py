@@ -17,6 +17,7 @@ class UCFTests(unittest.TestCase):
         ucf.UCF
         ucf.BadFileFormat
         ucf.Rootfile
+        ucf.element_tostring
         
     def test_api(self):
         pkg = ucf.UCF()
@@ -100,6 +101,7 @@ class UCFTests(unittest.TestCase):
         """The mimetype property is always ASCII encoded."""
         
         pkg = ucf.UCF()
+        pkg.mimetype = unicode('image/jpeg')
         assert isinstance(pkg.mimetype, bytes)
         assert pkg.mimetype.decode('ASCII')
 
@@ -187,6 +189,23 @@ class RootfileTests(unittest.TestCase):
             assert obj.path == 'path'
             assert obj.mimetype == 'mimetype'
 
+
+class XMLTests(unittest.TestCase):
+    def test_element_tostring(self):
+        element = ET.Element('tag')
+
+        assert ucf.element_tostring(element) == b"<?xml version='1.0' encoding='utf-8'?>\n<tag />"
+        assert ucf.element_tostring(element, xml_declaration=False) == b'<tag />'
+        
+        result = ucf.element_tostring(element, encoding='us-ascii')
+        assert result == b"<?xml version='1.0' encoding='us-ascii'?>\n<tag />"
+        
+        result = ucf.element_tostring(element, encoding='us-ascii', xml_declaration=False)
+        assert result == b"<tag />", result
+        
+        element = ET.Element('{example}tag')
+        result = ucf.element_tostring(element, default_namespace='example')
+        assert result == b"<?xml version='1.0' encoding='utf-8'?>\n<tag xmlns=\"example\" />", result
 
 
 if __name__ == "__main__":
