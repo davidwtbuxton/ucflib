@@ -1,5 +1,5 @@
 from __future__ import unicode_literals
-from collections import OrderedDict, MutableMapping
+from collections import OrderedDict, MutableMapping, namedtuple
 from io import BytesIO
 from unicodedata import normalize
 from xml.etree import cElementTree as ET
@@ -22,7 +22,11 @@ The UCF spec is included with the Creative Suite SDK. Also here:
 
 
 __version__ = '0.2'
-
+__all__ = [
+    'UCF',
+    'BadFileFormat',
+    'Rootfile',
+]
 
 # Python 3 compatibility
 try:
@@ -58,19 +62,13 @@ NSMAP = {
 }
 
 
-def element_tostring(ele, xml_declaration=True, encoding=UTF8,
-                     default_namespace=None):
-    out = BytesIO()
-    # Use str(encoding) as suggested by http://bugs.python.org/issue15811#msg169395.
-    tree = ET.ElementTree(ele)
-    tree.write(out, xml_declaration=xml_declaration, encoding=str(encoding),
-        default_namespace=default_namespace)
-    return out.getvalue()
-
-
 for prefix in NSMAP:
     ET.register_namespace(prefix, NSMAP[prefix])
     
+
+# Represents a <rootfile full-path="" media-type="" /> element
+Rootfile = namedtuple('Rootfile', 'path mimetype')
+
 
 class BadFileFormat(Exception):
     """The archive does not conform to the UCF specification."""
@@ -184,6 +182,16 @@ class UCF(OrderedDict):
         return object.__repr__(self)
 
 
+def element_tostring(ele, xml_declaration=True, encoding=UTF8,
+                     default_namespace=None):
+    out = BytesIO()
+    # Use str(encoding) as suggested by http://bugs.python.org/issue15811#msg169395.
+    tree = ET.ElementTree(ele)
+    tree.write(out, xml_declaration=xml_declaration, encoding=str(encoding),
+        default_namespace=default_namespace)
+    return out.getvalue()
+
+
 def _encode(string, encoding=UTF8):
     if isinstance(string, unicode):
         return string.encode(encoding)
@@ -232,7 +240,7 @@ def _read_rootfiles(xml):
     pairs = [(ele.get('full-path'), ele.get('media-type')) for ele in eles]
     # Python 2/3 ET returns bytes on 2, unicode on 3
     # The media-type attribute is optional per spec. Guard against None.
-    return [(_decode(fp), _decode(mt) if mt else mt) for fp, mt in pairs]
+    return [Rootfile(_decode(fp), _decode(mt) if mt else mt) for fp, mt in pairs]
 
 
 def _assert_valid_name(name):

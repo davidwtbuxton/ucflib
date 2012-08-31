@@ -11,10 +11,12 @@ except NameError:
     unicode = str
 
 
-class API(unittest.TestCase):
+class UCFTests(unittest.TestCase):
     def test_exports(self):
+        """Which objects are "public", available with `from ucf import *`"""
         ucf.UCF
         ucf.BadFileFormat
+        ucf.Rootfile
         
     def test_api(self):
         pkg = ucf.UCF()
@@ -82,10 +84,17 @@ class API(unittest.TestCase):
         media_type is its mime-type.
         """
         pkg = ucf.UCF()
+        pkg.rootfiles.extend([
+            ucf.Rootfile(path='example.jpg', mimetype='image/jpeg'),
+            ucf.Rootfile(mimetype='image/jpeg', path='example.jpg'),
+            ('example.jpg', 'image/jpeg'),
+        ])
+        
+        assert len(pkg.rootfiles) == 3
         
         for full_path, media_type in pkg.rootfiles:
-            assert isinstance(full_path, basestring)
-            assert isinstance(media_type, basestring)
+            assert full_path == 'example.jpg'
+            assert media_type == 'image/jpeg'
     
     def test_mimetype(self):
         """The mimetype property is always ASCII encoded."""
@@ -162,6 +171,22 @@ class ContainerTest(unittest.TestCase):
             result = ucf._read_rootfiles(result)
             
             assert result == expected
+
+
+class RootfileTests(unittest.TestCase):
+    """Rootfile namedtuple behaviour."""
+    def test_rootfile(self):
+        self.assertRaises(TypeError, ucf.Rootfile)
+        
+        rf1 = ucf.Rootfile('path', 'mimetype')
+        rf2 = ucf.Rootfile(mimetype='mimetype', path='path')
+        rf3 = ucf.Rootfile(path='path', mimetype='mimetype')
+        
+        for obj in [rf1, rf2, rf3]:
+            assert obj == ('path', 'mimetype')
+            assert obj.path == 'path'
+            assert obj.mimetype == 'mimetype'
+
 
 
 if __name__ == "__main__":
