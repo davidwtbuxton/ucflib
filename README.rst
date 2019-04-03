@@ -33,13 +33,13 @@ Creating a new file
 ::
 
     import ucf
-    
+
     my_doc = ucf.UCF(mimetype='application/epub+zip')
-    
+
     my_doc['OPS/chapter-1.xhtml'] = b'<?xml ?>'
     my_doc['OPS/epb.opf'] = b''
     my_doc.rootfiles.append(('OPS/epb.opf', 'application/oebps-package-xml'))
-    
+
     my_doc.save(filename='my_doc.epub')
 
 The ``filename`` argument can be a string or any file-like object open for writing. Alternatively ``filename`` can be omitted when saving if it was included when the instance was created::
@@ -47,7 +47,7 @@ The ``filename`` argument can be a string or any file-like object open for writi
     my_doc = ufc.UCF(filename='my_doc.epub')
     my_doc['OPS/epb.opf'] = b''
     my_doc.save()
-    
+
 
 Reading an existing file
 ------------------------
@@ -55,7 +55,7 @@ Reading an existing file
 Use the ``filename`` argument when creating a new instance. ``filename`` can be a string or any file-like object open for reading::
 
     import ucf
-    
+
     my_doc = ucf.UCF(filename='my_doc.epub')
 
 An instance of UCF is an ordered dictionary. Keys are the names of files in the archive and are always unicode strings. The values are the contents of the files and are always byte strings.
@@ -68,7 +68,7 @@ The mimetype property is a convenience for accessing the 'mimetype' file in the 
 
     my_doc.mimetype = unicode('application/oebps-package-xml')
     assert isinstance(my_doc.mimetype, bytes) # True
-    
+
 The EPUB specification requires a 'META-INF/container.xml' file in the archive. You can use a shortcut to refer to any file in the 'META-INF' directory in the archive::
 
     my_doc.meta[u'container.xml']
@@ -84,6 +84,3 @@ To create a new entry in the list of root files, just add a tuple (or named tupl
 
     my_tuple = ucf.Rootfile(path='OPS/epb.opf', mimetype='application/oebps-package-xml')
     my_doc.rootfiles.append(my_tuple)
-
-
-

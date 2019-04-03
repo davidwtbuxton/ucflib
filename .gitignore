@@ -3,3 +3,4 @@
 *.idml
 MANIFEST
 dist
+.tox/
