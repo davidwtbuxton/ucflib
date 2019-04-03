@@ -145,7 +145,9 @@ class UCF(OrderedDict):
         
         if self.rootfiles:
             container = _build_container(self.rootfiles)
-            self.meta[CONTAINER] = container.encode(UTF8)
+            if isinstance(container, unicode):
+                container = container.encode(UTF8)
+            self.meta[CONTAINER] = container
             
         all_names = list(self.keys()) # Py2/3 compat.
         
